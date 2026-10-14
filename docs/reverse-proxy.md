@@ -1,27 +1,17 @@
-# Reverse proxy with Caddy
+# Caddy
 
-Caddy is the HTTPS entry point. It chooses an upstream by hostname and keeps application ports off the client-facing network.
+Caddy is the front door for the web interfaces. The setup uses separate private names for the dashboard, status page, Grafana, Immich, Navidrome, Jellyfin, Nextcloud, Portainer, Radarr, Prowlarr, Deluge, and the demo site. The real names and upstream addresses are not in this repo.
 
-The [example Caddyfile](../examples/caddy/Caddyfile) routes `home.lab.test` to `homepage:3000` and `status.lab.test` to `uptime-kuma:3001`. Those upstream names work when all three containers share the Compose network. Replace the hostnames and upstreams for your deployment.
+The [example Caddyfile](../examples/caddy/Caddyfile) shows only Homepage and Uptime Kuma. It matches the small [Compose example](../examples/docker/compose.example.yml), where Caddy can reach both by Docker service name. The actual server also uses loopback-bound upstreams. Check which network Caddy is on before copying either pattern.
 
-The example uses Caddy's internal certificate authority. Clients need to trust its root certificate to validate HTTPS. Back up the Caddy `/data` volume because it contains certificate state. Keep the CA key private and never commit it. A different certificate strategy is needed if you use a public domain and want publicly trusted certificates.
+`tls internal` makes Caddy issue certificates from its own local CA. A client must trust that CA to get a valid HTTPS connection. Keep Caddy's `/data` volume backed up and private; it contains certificate state. Do not copy CA keys or certificates into Git.
 
-## Validation
-
-From the working Compose directory:
+To check the sample after copying it to a separate working directory:
 
 ```bash
-docker compose --env-file .env -f compose.yml config
-docker compose --env-file .env -f compose.yml up -d
-docker compose --env-file .env -f compose.yml exec caddy caddy validate --config /etc/caddy/Caddyfile
+docker compose config
+docker compose up -d
+docker compose exec caddy caddy validate --config /etc/caddy/Caddyfile
 ```
 
-After editing the Caddyfile, validate before reloading:
-
-```bash
-docker compose --env-file .env -f compose.yml exec caddy caddy reload --config /etc/caddy/Caddyfile
-```
-
-Test from a client with trusted DNS and CA. If a request fails, inspect Caddy logs and confirm the upstream container is healthy. Keep application-specific authentication enabled even when Caddy is reachable only privately.
-
-For current syntax and certificate behavior, refer to the [Caddyfile guide](https://caddyserver.com/docs/caddyfile/concepts) and [Caddy's service guidance](https://caddyserver.com/docs/running).
+Validate an edited Caddyfile before reloading it. For a backend that itself speaks HTTPS, validate its certificate rather than disabling upstream verification.

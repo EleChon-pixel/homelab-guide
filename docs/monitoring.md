@@ -1,15 +1,11 @@
-# Monitoring
+# Monitoring and update notices
 
-Start with availability, then add metrics. Monitoring should report a problem to a place you actually check; a dashboard alone does not alert you.
+There are three separate jobs in this stack:
 
-## Availability
+- **Uptime Kuma** checks whether selected sites respond. It is the quickest way to notice that a page is unreachable.
+- **Prometheus** collects metrics from **Node Exporter** for the host and **cAdvisor** for containers. **Grafana** is where those metrics are read.
+- **DIUN** watches for container image updates. The **DIUN Signal bridge** and **Signal API** form the notification path for those notices.
 
-Uptime Kuma can check the proxy hostnames and selected internal services. Use an HTTPS check from a client that trusts the Caddy CA. A check from inside the same Docker network answers a different question than a check from a remote client, so use both when remote access matters.
+These answer different questions. A healthy container can still have a broken DNS or proxy route, and an available update does not mean the current version has failed. For an important app, check both the app's private HTTPS name and the host's capacity.
 
-Useful checks include DNS resolution, proxy response, app login page, backup job completion, and free storage. Avoid putting credentials in a check URL.
-
-## Metrics
-
-Prometheus can collect host and container metrics; Grafana can graph capacity and trends. Restrict exporters and dashboards to the private network. Start with disk free space, memory pressure, CPU load, container restarts, and backup age. Set alert thresholds after observing normal behavior.
-
-Keep monitoring data separate from the backup of irreplaceable user data. Decide how much metric history is worth retaining before sizing storage.
+Start with disk space, container restarts, and whether the services people use are reachable. Keep notification credentials and webhook details in local configuration, not in this guide.

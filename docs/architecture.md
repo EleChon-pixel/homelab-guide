@@ -1,28 +1,19 @@
-# Architecture
+# How it fits together
 
-## Components
+The server runs the web apps and their databases in Docker. Caddy is the single HTTPS entry point for people using a browser. AdGuard Home supplies the private names, and Tailscale makes the server reachable from trusted devices away from the LAN.
 
-| Layer | Example | Responsibility |
-| --- | --- | --- |
-| Host | Linux server | Runs containers and stores persistent data |
-| Application runtime | Docker Compose | Declares containers, networks, and volumes |
-| Private connectivity | Local network and Tailscale | Limits which devices can reach services |
-| Name resolution | AdGuard Home or another private resolver | Maps friendly names to the proxy |
-| HTTPS entry point | Caddy | Terminates TLS and routes by hostname |
-| Availability | Uptime Kuma | Checks whether a service responds |
-| Metrics | Prometheus and Grafana | Collects and presents capacity trends |
-| Recovery | Encrypted backup on separate storage | Restores configuration and user data |
+There are two kinds of containers here:
 
-Clients resolve a private hostname, connect to the Caddy host, then Caddy forwards the request to a service on a Docker network. Applications should not publish their own ports unless there is a specific reason. Management interfaces need their own access rules.
+- **Web apps** such as Homepage, Immich, Nextcloud, Jellyfin, Navidrome, Grafana, and Uptime Kuma. Caddy gives each one a private hostname.
+- **Backing services** such as PostgreSQL, Redis, Prometheus exporters, and the Immich machine-learning worker. They do their work without a public web route.
 
-## Build order
+The server proxies several apps through ports bound to its loopback interface. The small Compose example in this repo puts Caddy and its two sample apps on one Docker network and uses service names as upstreams. That example shows the route clearly; the server uses its own configuration.
 
-1. Prepare the host, updates, storage, and a non-admin account for routine work.
-2. Establish private connectivity and DNS.
-3. Deploy Caddy and one low-risk app; check HTTPS and name resolution from a client.
-4. Add monitoring, backups, and a restore exercise.
-5. Add stateful apps one at a time. Record their data paths, database dependencies, and upgrade procedure.
+## Request path
 
-## State and ownership
+1. A device connects over the LAN or Tailscale.
+2. AdGuard Home resolves a private app name to the Caddy host.
+3. Caddy handles HTTPS and forwards the request to the app.
+4. The app talks to its own database, cache, or storage as needed.
 
-Compose files are a description of containers, not a backup of their data. Keep application state in named volumes or explicit host directories and document where each lives. Databases need an application-consistent export or snapshot. Document the owner and permissions of every data directory before changing containers.
+The [service map](services.md) shows which containers belong together. Keeping those dependencies visible matters most for upgrades and restores: restarting a web app is simple, but losing its database or files is not.

@@ -1,56 +1,47 @@
-# Homelab Guide
+# Homelab guide
 
-A reusable blueprint for a private, Docker based homelab. It explains the roles of a reverse proxy, private DNS, remote access, monitoring, backups, and self hosted services. The names, addresses, and paths in this repository are examples; they are not an inventory of a running server.
+These are notes on how I run my home server. Most services are Docker containers. AdGuard Home handles private DNS, Caddy gives the web apps their own HTTPS names, and Tailscale lets my devices reach them away from home.
 
-## Design at a glance
+I keep the live settings on the server. The examples here use made-up names and can be tried on another machine. Real addresses, domains, mounts, credentials, and application data stay out of Git.
 
-```mermaid
-flowchart LR
-    client[Trusted device] --> vpn[Tailscale or local network]
-    vpn --> dns[Private DNS]
-    dns --> proxy[Caddy reverse proxy]
-    proxy --> apps[Docker services]
-    apps --> storage[Persistent volumes]
-    apps --> metrics[Health and metrics]
-    storage --> backup[Encrypted backup]
-```
+## What is running
 
-The guide covers Docker Compose, Caddy, Tailscale, AdGuard Home, Homepage, Uptime Kuma, Prometheus, and Grafana. The runnable Compose example starts only Caddy, Homepage, and Uptime Kuma. The [service catalogue](docs/services.md) explains optional media, photo, file, and management services. Each component is independent: start with a proxy and one app, then add what you need.
+- **Access:** Caddy, AdGuard Home, Tailscale, Homepage, Portainer
+- **Monitoring and notifications:** Uptime Kuma, Prometheus, Grafana, cAdvisor, Node Exporter, DIUN, a DIUN-to-Signal bridge, Signal API
+- **Files and photos:** Nextcloud with its database and Redis; Immich with PostgreSQL, Redis, and its machine-learning service
+- **Media:** Jellyfin, Navidrome, Radarr, Prowlarr, Deluge, Gluetun
+- **Small web apps:** an nginx-hosted demo site
 
-## Start here
+The [service map](docs/services.md) covers every container in the snapshot used for this guide. It also distinguishes the user-facing apps from their backing services.
 
-1. Read the [architecture](docs/architecture.md), [networking](docs/networking.md), and [security](docs/security.md) guides before exposing a port.
-2. Create a working directory **outside this repository**. Copy [the environment example](examples/environment/.env.example) there as `.env`. Replace the sample hostnames and choose a bind address for your network. Never commit `.env`.
-3. Copy [the Compose example](examples/docker/compose.example.yml) there as `compose.yml` and copy [the Caddyfile](examples/caddy/Caddyfile) there as `Caddyfile`. Create a `homepage` directory beside them. The examples are a learning starting point; pin images, configure each app, and review permissions before long term use.
-4. Configure private DNS for the names you chose. Caddy's internal CA must be trusted on clients that access those names; see [reverse proxy](docs/reverse-proxy.md).
-5. Add monitoring and a tested backup before relying on a service. See [monitoring](docs/monitoring.md) and [backups](docs/backups.md).
+## How the pieces fit
 
-From the repository root, the copies in steps 2 and 3 can be made with:
+A device reaches the server over the local network or Tailscale. AdGuard Home resolves a private name to the server. Caddy accepts the HTTPS request and sends it to the right app. Most app web interfaces are kept off the general network and reached through Caddy. [Architecture](docs/architecture.md) and [networking](docs/networking.md) cover the details.
+
+The configuration in `examples/` starts Caddy, Homepage, and Uptime Kuma to show the routing pattern. The other services are covered in the [service map](docs/services.md). To try the example, copy these three files into a directory outside this repository and adjust the local `.env`:
 
 ```bash
 mkdir -p ../homelab-example/homepage
 cp examples/environment/.env.example ../homelab-example/.env
 cp examples/docker/compose.example.yml ../homelab-example/compose.yml
 cp examples/caddy/Caddyfile ../homelab-example/Caddyfile
+cd ../homelab-example
+docker compose config
 ```
 
-Edit `../homelab-example/.env`, then validate from that working directory with `docker compose config` before starting containers.
+The sample binds Caddy to loopback. Read [remote access](docs/remote-access.md) before changing that address or opening ports.
 
-## Guides
+## Notes by topic
 
-| Topic | Purpose |
-| --- | --- |
-| [Architecture](docs/architecture.md) | Components and trust boundaries |
-| [Networking](docs/networking.md) | Private DNS and traffic flow |
-| [Security](docs/security.md) | Access, secrets, updates, and review |
-| [Reverse proxy](docs/reverse-proxy.md) | Caddy and local HTTPS |
-| [Remote access](docs/remote-access.md) | Tailnet access without public exposure |
-| [Monitoring](docs/monitoring.md) | Uptime and metrics |
-| [Backups](docs/backups.md) | Restore focused backup plan |
-| [Services](docs/services.md) | Optional applications and their data |
+- [Services](docs/services.md): what runs and what depends on what
+- [Architecture](docs/architecture.md): traffic flow and the two proxy patterns
+- [Networking](docs/networking.md): private DNS and name resolution
+- [Reverse proxy](docs/reverse-proxy.md): Caddy and local HTTPS
+- [Remote access](docs/remote-access.md): Tailscale and port ownership
+- [Monitoring](docs/monitoring.md): availability, metrics, and update notices
+- [Backups](docs/backups.md): data that needs a recovery plan
+- [Security](docs/security.md): what stays out of the repo and off the public network
 
-## Repository safety
+## Before committing changes
 
-This guide deliberately contains no live configuration, credentials, private domains, server identity, Tailscale address, or actual storage path. Keep real `.env` files, app data, certificates, database dumps, and backups outside Git. Before publishing a change, review the staged diff and run a secret scanner against the repository history. A private GitHub repository is still a shared copy of anything pushed to it.
-
-There is no automated deployment from this repository. Adapt and verify examples on your own host.
+Keep `.env` files, tokens, passwords, certificates, databases, backups, and media outside this repository. Review `git diff --cached` before every commit. `.gitignore` helps, but it cannot protect a secret that has already entered Git history.

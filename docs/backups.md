@@ -1,28 +1,17 @@
-# Backups and restore
+# Backups
 
-A backup plan is complete when a restore has succeeded. Docker images and Compose files can be recreated; personal files, app configuration, databases, and Caddy CA state cannot be assumed recoverable.
+The running-container list shows what holds data, but it does not prove that a backup job exists or that a restore has worked. This is the data I would account for before relying on the stack:
 
-## Inventory
-
-For each service, record:
-
-| Item | Record |
+| Service | Data to preserve together |
 | --- | --- |
-| Data location | Named volume or host directory |
-| Database | Product and consistent export method |
-| Backup frequency | Based on acceptable data loss |
-| Retention | Number of local and off-host copies |
-| Restore steps | Tested commands and order |
-| Encryption | Key storage and recovery owner |
+| Immich | Original photos, PostgreSQL data or consistent export, and app configuration |
+| Nextcloud | User files, database export, and app configuration |
+| Jellyfin and Navidrome | Libraries if they are the only copies, plus metadata and settings |
+| Caddy | `/data`, including the private CA state |
+| AdGuard Home | DNS rewrites and settings |
+| Homepage, Uptime Kuma, Grafana, Portainer | Configuration, monitor definitions, dashboards, and management state |
+| Radarr, Prowlarr, Deluge | Settings and any data that cannot be recreated |
 
-Do not copy a live database file and assume it is consistent. Use the database's supported dump mechanism or a coordinated snapshot. Encrypt an off-host copy and keep the recovery key outside the server being backed up.
+Use each database's supported export or a coordinated snapshot. Copying a live database file without coordinating writes can produce a backup that will not restore. Keep at least one encrypted copy away from the server, with its recovery key stored separately.
 
-## Restore drill
-
-1. Choose one noncritical service and a spare host or isolated directory.
-2. Restore its configuration, database, and files from a selected backup.
-3. Start the service without replacing production data.
-4. Verify application login and a representative file or record.
-5. Record duration, missing dependencies, and the last recoverable point.
-
-Repeat after major upgrades or storage changes. Alert when a backup is missing or older than its planned interval.
+The useful test is a restore on a spare machine or isolated directory: bring back one service, sign in, and open a representative file or record. Record what was missing before assuming the rest of the stack is covered.

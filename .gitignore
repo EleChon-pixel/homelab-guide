@@ -10,6 +10,10 @@
 *.crt
 *.db
 *.sqlite*
+*.sql
+*.log
+id_rsa*
+id_ed25519*
 *secret*
 *credential*
 
