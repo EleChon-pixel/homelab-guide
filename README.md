@@ -43,7 +43,3 @@ The sample binds Caddy to loopback. Read [remote access](docs/remote-access.md) 
 - [Monitoring](docs/monitoring.md): availability, metrics, and update notices
 - [Backups](docs/backups.md): data that needs a recovery plan
 - [Security](docs/security.md): what stays out of the repo and off the public network
-
-## Before committing changes
-
-Keep `.env` files, tokens, passwords, certificates, databases, backups, and media outside this repository. Review `git diff --cached` before every commit. `.gitignore` helps, but it cannot protect a secret that has already entered Git history.
