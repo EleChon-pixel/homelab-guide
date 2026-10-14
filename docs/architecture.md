@@ -1,19 +1,20 @@
-# How it fits together
+# How I wired it
 
-The server runs the web apps and their databases in Docker. Caddy is the single HTTPS entry point for people using a browser. AdGuard Home supplies the private names, and Tailscale makes the server reachable from trusted devices away from the LAN.
+I run the web apps and their databases in Docker. I use Caddy as the HTTPS entry point for browser traffic, AdGuard Home for private DNS, and Tailscale when I am away from the LAN.
 
-There are two kinds of containers here:
+My device looks up a private app name through AdGuard Home, then connects to Caddy over the LAN or Tailscale. Caddy sends the HTTPS request to the app:
 
-- **Web apps** such as Homepage, Immich, Nextcloud, Jellyfin, Navidrome, Grafana, and Uptime Kuma. Caddy gives each one a private hostname.
-- **Backing services** such as PostgreSQL, Redis, Prometheus exporters, and the Immich machine-learning worker. They do their work without a public web route.
+```text
+name lookup: my device → AdGuard Home → server address
+web request: my device → LAN or Tailscale → Caddy → web app
+```
 
-The server proxies several apps through ports bound to its loopback interface. The small Compose example in this repo puts Caddy and its two sample apps on one Docker network and uses service names as upstreams. That example shows the route clearly; the server uses its own configuration.
+Several app containers publish their web ports on the host's loopback interface. Caddy routes private hostnames to Homepage, Uptime Kuma, Grafana, Immich, Navidrome, Jellyfin, Nextcloud, Portainer, Radarr, Prowlarr, Deluge, and the demo site. AdGuard Home resolves those names to the server; I do not need a public DNS record for each app.
 
-## Request path
+The data containers stay behind the apps. Immich uses its own PostgreSQL, Redis, and machine-learning containers. Nextcloud has its own database and Redis. Prometheus reads host and container metrics from Node Exporter and cAdvisor; Grafana displays them. DIUN and the Signal components handle image update notices. The [service map](services.md) shows every container in the snapshot.
 
-1. A device connects over the LAN or Tailscale.
-2. AdGuard Home resolves a private app name to the Caddy host.
-3. Caddy handles HTTPS and forwards the request to the app.
-4. The app talks to its own database, cache, or storage as needed.
+## Why the examples look different
 
-The [service map](services.md) shows which containers belong together. Keeping those dependencies visible matters most for upgrades and restores: restarting a web app is simple, but losing its database or files is not.
+My server uses loopback-bound upstreams for several Caddy routes. The small [Compose example](../examples/docker/compose.example.yml) keeps Caddy and two sample apps on one Docker network, so it can use service names as upstreams. It demonstrates the same routing idea without copying my live network settings.
+
+The guide also keeps the app dependencies visible. Recreating a container is easy; recovering the photos, files, databases, and Caddy CA state needs a separate [backup plan](backups.md).
