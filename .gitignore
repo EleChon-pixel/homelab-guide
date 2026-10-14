@@ -1,0 +1,32 @@
+# Local configuration and credentials
+.env
+.env.*
+!.env.example
+!**/.env.example
+*.key
+*.pem
+*.p12
+*.pfx
+*.crt
+*.db
+*.sqlite*
+*secret*
+*credential*
+
+# Runtime data and backups
+data/
+volumes/
+backups/
+/examples/docker/Caddyfile
+/examples/docker/compose.yml
+/examples/docker/homepage/
+*.bak
+*.tar
+*.tar.gz
+*.zip
+
+# Editors and operating systems
+.DS_Store
+*.swp
+.idea/
+.vscode/

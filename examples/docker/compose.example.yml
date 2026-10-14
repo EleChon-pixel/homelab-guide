@@ -1,0 +1,38 @@
+# Copy this file, the Caddyfile, and .env into one working directory.
+# Review image versions, access controls, and persistent data before use.
+services:
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    ports:
+      - "${BIND_ADDRESS:-127.0.0.1}:80:80"
+      - "${BIND_ADDRESS:-127.0.0.1}:443:443"
+    environment:
+      DASHBOARD_HOST: ${DASHBOARD_HOST:?set DASHBOARD_HOST}
+      STATUS_HOST: ${STATUS_HOST:?set STATUS_HOST}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - homepage
+      - uptime-kuma
+
+  homepage:
+    image: ghcr.io/gethomepage/homepage:latest
+    restart: unless-stopped
+    environment:
+      HOMEPAGE_ALLOWED_HOSTS: ${DASHBOARD_HOST:?set DASHBOARD_HOST}
+    volumes:
+      - ./homepage:/app/config
+
+  uptime-kuma:
+    image: louislam/uptime-kuma:2
+    restart: unless-stopped
+    volumes:
+      - uptime_kuma_data:/app/data
+
+volumes:
+  caddy_data:
+  caddy_config:
+  uptime_kuma_data:

@@ -1,0 +1,9 @@
+{$DASHBOARD_HOST} {
+    tls internal
+    reverse_proxy homepage:3000
+}
+
+{$STATUS_HOST} {
+    tls internal
+    reverse_proxy uptime-kuma:3001
+}
