@@ -4,7 +4,7 @@ This repository shows how I put my home server together. Most services run in Do
 
 I use real service names so the layout makes sense, but replace the connection details. The examples use made-up domains and stay separate from my live configuration. Real addresses, mounts, credentials, and application data stay out of Git.
 
-## What is running
+## What i have running
 
 - **Access:** Caddy, AdGuard Home, Tailscale, Homepage, Portainer
 - **Monitoring and notifications:** Uptime Kuma, Prometheus, Grafana, cAdvisor, Node Exporter, DIUN, a DIUN-to-Signal bridge, Signal API
@@ -14,7 +14,7 @@ I use real service names so the layout makes sense, but replace the connection d
 
 The [service map](docs/services.md) covers every container in the snapshot used for this guide. It also distinguishes the user-facing apps from their backing services.
 
-## How the pieces fit
+## The how
 
 A device reaches the server over the local network or Tailscale. AdGuard Home resolves a private name to the server. Caddy accepts the HTTPS request and sends it to the right app. Most app web interfaces are kept off the general network and reached through Caddy. [Architecture](docs/architecture.md) and [networking](docs/networking.md) cover the details.
 
