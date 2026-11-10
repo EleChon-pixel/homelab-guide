@@ -1,0 +1,18 @@
+# This example directory contains only public templates.
+# Run it from a separate private working directory.
+.env
+.env.*
+!.env.example
+secrets/
+state/
+media/
+compose.yml
+*.key
+*.pem
+*.ovpn
+wg0.conf
+wireguard/
+*.db
+*.sqlite*
+*.log
+*.torrent
