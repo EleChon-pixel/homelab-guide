@@ -1,35 +1,71 @@
-# Local configuration and credentials
+# Local environment files (allow sanitised templates)
 .env
 .env.*
 !.env.example
 !**/.env.example
+*.local
+*.local.*
+
+# Credentials, certificates, WireGuard / OpenVPN and SSH
 *.key
 *.pem
 *.p12
 *.pfx
 *.crt
+*.p8
+*.p7b
+*.jks
+*.kdbx
+*.ovpn
+wg0.conf
+wireguard/*.conf
+**/wireguard/*.conf
+**/secrets/
+**/private/
+id_rsa*
+id_ed25519*
+*.token
+*.secret
+*secret*
+*credential*
+*password*
+
+# Database, runtime data, telemetry, downloads and backups
 *.db
 *.sqlite*
 *.sql
+*.dump
 *.log
-id_rsa*
-id_ed25519*
-*secret*
-*credential*
-
-# Runtime data and backups
-data/
-volumes/
-backups/
-/examples/docker/Caddyfile
-/examples/docker/compose.yml
-/examples/docker/homepage/
+*.torrent
+*.part
 *.bak
 *.tar
 *.tar.gz
 *.zip
+data/
+state/
+volumes/
+backups/
+Downloads/
+Movies/
+TV/
+Music/
+media/
+**/appdata/
+**/config-private/
+**/cache/
 
-# Editors and operating systems
+# Private local copies of published examples
+/examples/docker/Caddyfile
+/examples/docker/compose.yml
+/examples/docker/homepage/
+/examples/media/compose.yml
+/examples/media/.env
+/examples/media/state/
+/examples/media/secrets/
+/examples/media/media/
+
+# OS / editors
 .DS_Store
 *.swp
 .idea/
