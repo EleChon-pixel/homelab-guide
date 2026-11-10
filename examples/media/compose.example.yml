@@ -1,0 +1,98 @@
+# EXAMPLE ONLY. Copy to a private directory with .env and secrets/wg0.conf.
+# Review permissions, VPN provider, firewall and image versions before deploying.
+# All web interfaces bind to loopback; a remote device needs a secured proxy or tunnel.
+name: media-demo
+
+services:
+  gluetun:
+    image: qmcgaw/gluetun:latest
+    restart: unless-stopped
+    cap_add:
+      - NET_ADMIN
+    devices:
+      - /dev/net/tun:/dev/net/tun
+    environment:
+      VPN_SERVICE_PROVIDER: custom
+      VPN_TYPE: wireguard
+      FIREWALL_INPUT_PORTS: "8112"
+      # Enable provider-side forwarding only after verifying VPN support:
+      VPN_PORT_FORWARDING: "${VPN_PORT_FORWARDING:-off}"
+      VPN_PORT_FORWARDING_PROVIDER: "${VPN_PORT_FORWARDING_PROVIDER:-protonvpn}"
+    volumes:
+      - ./secrets/wg0.conf:/gluetun/wireguard/wg0.conf:ro
+      - ./state/gluetun:/gluetun
+    ports:
+      - "127.0.0.1:8112:8112"
+
+  deluge:
+    image: lscr.io/linuxserver/deluge:latest
+    restart: unless-stopped
+    network_mode: service:gluetun
+    depends_on:
+      - gluetun
+    environment:
+      PUID: "${PUID:?set PUID in .env}"
+      PGID: "${PGID:?set PGID in .env}"
+      TZ: "${TZ:-Etc/UTC}"
+    volumes:
+      - ./state/deluge:/config
+      - ./media:/data
+
+  radarr:
+    image: lscr.io/linuxserver/radarr:latest
+    restart: unless-stopped
+    environment:
+      PUID: "${PUID:?set PUID in .env}"
+      PGID: "${PGID:?set PGID in .env}"
+      TZ: "${TZ:-Etc/UTC}"
+    volumes:
+      - ./state/radarr:/config
+      - ./media:/data
+    ports:
+      - "127.0.0.1:7878:7878"
+
+  sonarr:
+    image: lscr.io/linuxserver/sonarr:latest
+    restart: unless-stopped
+    environment:
+      PUID: "${PUID:?set PUID in .env}"
+      PGID: "${PGID:?set PGID in .env}"
+      TZ: "${TZ:-Etc/UTC}"
+    volumes:
+      - ./state/sonarr:/config
+      - ./media:/data
+    ports:
+      - "127.0.0.1:8989:8989"
+
+  prowlarr:
+    image: lscr.io/linuxserver/prowlarr:latest
+    restart: unless-stopped
+    environment:
+      PUID: "${PUID:?set PUID in .env}"
+      PGID: "${PGID:?set PGID in .env}"
+      TZ: "${TZ:-Etc/UTC}"
+    volumes:
+      - ./state/prowlarr:/config
+    ports:
+      - "127.0.0.1:9696:9696"
+
+  seerr:
+    image: ghcr.io/seerr-team/seerr:latest
+    restart: unless-stopped
+    environment:
+      TZ: "${TZ:-Etc/UTC}"
+    volumes:
+      - ./state/seerr:/app/config
+    ports:
+      - "127.0.0.1:5055:5055"
+
+  jellyfin:
+    image: jellyfin/jellyfin:latest
+    restart: unless-stopped
+    volumes:
+      - ./state/jellyfin/config:/config
+      - ./state/jellyfin/cache:/cache
+      - ./media/Movies:/media/movies:ro
+      - ./media/TV:/media/tv:ro
+    ports:
+      - "127.0.0.1:8096:8096"
