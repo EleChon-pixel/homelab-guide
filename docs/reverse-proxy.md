@@ -1,17 +1,35 @@
-# Caddy
+# HTTPS reverse proxy with Caddy
 
-Caddy is the front door for the web interfaces. The setup uses separate private names for the dashboard, status page, Grafana, Immich, Navidrome, Jellyfin, Nextcloud, Portainer, Radarr, Prowlarr, Deluge, and the demo site. The real names and upstream addresses are not in this repo.
+A reverse proxy provides one controlled HTTPS entry point for multiple internal services. The [minimal Caddyfile](../examples/caddy/Caddyfile) routes example private names to Homepage and Uptime Kuma, as defined in the [basic Compose file](../examples/docker/compose.example.yml).
 
-The [example Caddyfile](../examples/caddy/Caddyfile) shows only Homepage and Uptime Kuma. It matches the small [Compose example](../examples/docker/compose.example.yml), where Caddy can reach both by Docker service name. The actual server also uses loopback-bound upstreams. Check which network Caddy is on before copying either pattern.
-
-`tls internal` makes Caddy issue certificates from its own local CA. A client must trust that CA to get a valid HTTPS connection. Keep Caddy's `/data` volume backed up and private; it contains certificate state. Do not copy CA keys or certificates into Git.
-
-To check the sample after copying it to a separate working directory:
-
-```bash
-docker compose config
-docker compose up -d
-docker compose exec caddy caddy validate --config /etc/caddy/Caddyfile
+```caddyfile
+{$DASHBOARD_HOST} {
+    tls internal
+    reverse_proxy homepage:3000
+}
 ```
 
-Validate an edited Caddyfile before reloading it. For a backend that itself speaks HTTPS, validate its certificate rather than disabling upstream verification.
+## How to start
+
+1. Copy the example Caddyfile and Compose file into a **private working directory**.
+2. Customize the local `.env` with your intended names and bind address. The default `127.0.0.1` is for on-host testing.
+3. Ensure the client can resolve the chosen names to a reachable proxy address.
+4. Start the stack and trust Caddy's internal CA on each client that will browse the service.
+
+```bash
+docker compose config --quiet
+docker compose up -d
+docker compose exec caddy caddy validate --config /etc/caddy/Caddyfile
+docker compose ps
+```
+
+Caddy's `tls internal` uses a private certificate authority. Back up Caddy's `/data` volume securely; it includes sensitive CA material. Never commit real Caddy certificates, CA private keys, or an exported live Caddyfile.
+
+## Common problems
+
+- **DNS resolves but the page times out:** Check the proxy bind address, host firewall, client route and Tailscale policy.
+- **Bad Gateway:** Caddy can't reach its upstream; inspect Docker networks and the upstream port.
+- **Certificate error:** Client may not trust the private CA, or the requested hostname doesn't match.
+- **Port conflict:** Only one process can own a host listener. Check whether Caddy or Tailscale Serve already uses it.
+
+Do not bypass TLS verification as a permanent fix. For local-only services, keep upstreams on a private Docker network or bound to loopback. For VPN/torrent-related services, preserve the Gluetun network boundary described in [media automation](media-automation.md).
